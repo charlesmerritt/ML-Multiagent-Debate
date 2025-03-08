@@ -1,6 +1,6 @@
 # ML-Multiagent-Debate
 
-This project is a **Node.js** and **Express** application that demonstrates a **multi-agent debate** approach using the **OpenAI Chat API**. It has three main pages:
+This project demonstrates a **multi-agent debate** approach using the **OpenAI Chat API**. It has three main pages:
 
 1. **Home** – A simple welcome page with links to the other pages.
 2. **Legal** – Demonstrates a “one-shot” approach to a legal question and a multi-round debate approach that collects Agent 1, Agent 2, and a Moderator’s consensus in each round.
