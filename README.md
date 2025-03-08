@@ -1,5 +1,9 @@
 # ML-Multiagent-Debate
 
+
+Original Paper: https://arxiv.org/pdf/2305.14325
+Du, Yilun, et al. "Improving factuality and reasoning in language models through multiagent debate.
+
 This project demonstrates a **multi-agent debate** approach using the **OpenAI Chat API**. It has three main pages:
 
 1. **Home** – A simple welcome page with links to the other pages.
