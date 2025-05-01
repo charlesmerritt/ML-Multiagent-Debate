@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 batch_to_sft.py  --req requests.jsonl --res results.jsonl --csv out.csv --sft out.jsonl
+i.e. batch_to_sft.py --req batch_requests/gsm8k_lo.jsonl --res batch_responses/low_batch_68132d3745808190a446a21dc14edb6c_output.jsonl --csv low_gsm8k.csv --sft low_gsm8k.jsonl
 """
 
 import argparse, json, pathlib, re, sys
