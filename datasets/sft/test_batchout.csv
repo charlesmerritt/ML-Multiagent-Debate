@@ -1,0 +1,132 @@
+question,answer,agree_tag
+"In 10 years, Cornelia will be three times as old as Kilee. If Kilee is currently 20 years old, how old is Cornelia now?","Let's analyze the problem step-by-step:
+
+1. **Current ages:**
+   - Kilee is currently 20 years old.
+   - Cornelia's current age is unknown; let's denote it as \( C \).
+
+2. **Future ages in 10 years:**
+   - Kilee's age in 10 years: \( 20 + 10 = 30 \).
+   - Cornelia's age in 10 years: \( C + 10 \).
+
+3. **Given condition:**
+   - In 10 years, Cornelia will be three times as old as Kilee:
+     \[
+     C + 10 = 3 \times 30
+     \]
+     \[
+     C + 10 = 90
+     \]
+   
+4. **Solve for Cornelia's current age:**
+   \[
+   C = 90 - 10 = 80
+   \]
+
+**Therefore, Cornelia is currently 80 years old.**
+
+**Summary:** Cornelia is currently 80 years old.",hi
+"In 6 years, Carla will be 30 years old. The sum of the current ages of Carla and Louis is 55. How old is Louis now?","Let's analyze the problem step by step.
+
+1. **Determine Carla's current age:**
+   - In 6 years, Carla will be 30 years old.
+   - Therefore, her current age is \(30 - 6 = 24\) years.
+
+2. **Find Louis's current age:**
+   - The sum of Carla's and Louis's current ages is 55.
+   - Since Carla is 24, Louis's age is \(55 - 24 = 31\).
+
+**Final answer:**
+
+Louis is currently **31 years old**.",hi
+Winston has 14 quarters. He then spends half a dollar on candy. How many cents does he have left?,"Let's carefully analyze the problem step by step.
+
+1. **Determine how much money Winston has initially:**
+   - Winston has 14 quarters.
+   - Each quarter is worth 25 cents.
+   - Total initial amount in cents: \(14 \times 25 = 350\) cents.
+
+2. **Calculate the amount spent on candy:**
+   - He spends half a dollar.
+   - Half a dollar is 50 cents.
+
+3. **Find the remaining amount after purchase:**
+   - Remaining cents = initial amount - spent amount
+   - \(350 - 50 = 300\) cents
+
+**Final answer: Winston has \(\boxed{300}\) cents left.**",hi
+Madeline spends 18 hours a week in class. She spends 4 hours per day working on homework. She spends 8 hours per day sleeping. She works part-time 20 hours per week. How many hours left over does Madeline have?,"Let's break down Madeline's weekly schedule step by step:
+
+1. **Hours in class:**  
+   She spends 18 hours per week in class.
+
+2. **Hours spent on homework:**  
+   She spends 4 hours per day working on homework.  
+   Assuming a 7-day week:  
+   4 hours/day × 7 days = 28 hours per week.
+
+3. **Hours spent sleeping:**  
+   She sleeps 8 hours per day.  
+   Assuming a 7-day week:  
+   8 hours/day × 7 days = 56 hours per week.
+
+4. **Hours spent working part-time:**  
+   She works 20 hours per week.
+
+Now, let's sum up all these hours:
+
+- Class: 18 hours  
+- Homework: 28 hours  
+- Sleep: 56 hours  
+- Work: 20 hours
+
+Total hours spent:  
+18 + 28 + 56 + 20 = **122 hours**
+
+Since there are 168 hours in a week (24 hours/day × 7 days), the hours remaining are:
+
+168 - 122 = **46 hours**
+
+**So, Madeline has 46 hours left over each week for other activities like leisure, eating, commuting, or any other tasks",hi
+"Mr. Zubir bought a pair of pants, a shirt, and a coat. The pair of pants and shirt costs $100. The pants and coat cost $244. The coat costs 5 times as much as the shirt. How much did Mr. Zubir pay for his coat?","Let's carefully analyze the problem step by step.
+
+**Given:**
+- The pair of pants and shirt together cost \$100.
+- The pants and coat together cost \$244.
+- The coat costs 5 times as much as the shirt.
+
+Let:
+- \( P \) = cost of pants
+- \( S \) = cost of shirt
+- \( C \) = cost of coat
+
+From the information:
+1. \( P + S = 100 \)
+2. \( P + C = 244 \)
+3. \( C = 5S \)
+
+**Step 1:** Express \( P \) from the first equation:
+\[
+P = 100 - S
+\]
+
+**Step 2:** Substitute \( P \) into the second equation:
+\[
+(100 - S) + C = 244
+\]
+\[
+C = 244 - (100 - S) = 144 + S
+\]
+
+**Step 3:** Use the third equation \( C = 5S \):
+\[
+5S = 144 + S
+\]
+\[
+5S - S = 144
+\]
+\[
+4S = 144
+\]
+\[
+S = \frac{144}{4} =",hi
