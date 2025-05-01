@@ -1,16 +1,40 @@
 require('dotenv').config();
-const express = require('express');
-const app = express();
-const port = 3000;
+const express   = require('express');
+const fs        = require('fs');
+const path      = require('path');
+const multer    = require('multer');
+const duckdb   = require('duckdb');
+const csvParser = require('csv-parser');
+const {Parser}  = require('json2csv');
+
+const DebateService = require('./debateService');
+
+// OpenAI API
+const API_KEY = process.env.OPENAI_API_KEY;
+const API_URL = "https://api.openai.com/v1/chat/completions";
+const MODEL = "gpt-3.5-turbo";
+
+/* ---------- basic server / middleware ---------- */
+const app  = express();
+const port = process.env.PORT || 3000;
 
 // Built-in body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public')); // optional, for serving static files (CSS/JS)
 
-const API_KEY = process.env.OPENAI_API_KEY;
-const API_URL = "https://api.openai.com/v1/chat/completions";
-const MODEL = "gpt-3.5-turbo";
+const debateSvc = new DebateService(process.env.OPENAI_API_KEY);
+
+/* ------------------------------------------------------------------
+   Small helpers – one-shot & debate wrappers used by the pages / API
+------------------------------------------------------------------ */
+async function getZeroShotAnswer(q) {
+  return debateSvc.oneShot(q);          // thin wrapper
+}
+
+async function runDebate(q, rounds = 1) {
+  return debateSvc.debate(q, rounds);   // returns {roundData, final}
+}
 
 // ========== One-Shot (Zero-Shot) Answer Function ==========
 async function getZeroShotResponse(query) {
@@ -100,7 +124,7 @@ async function multiagentDebate(query, rounds = 1) {
         { role: "system", content: "You are an AI debate moderator. Analyze the two responses and provide a consensus answer that corrects any errors." },
         { role: "user", content: `Agent 1: ${agent1Answer}\nAgent 2: ${agent2Answer}\n\nBased on these responses, provide a final consensus answer for the question: ${currentQuery}` }
       ];
-      
+
       const debateResponse = await fetch(API_URL, {
         method: 'POST',
         headers: {
@@ -166,6 +190,7 @@ app.get('/', (req, res) => {
         <ul>
           <li><a href="/legal">Legal Use Case</a></li>
           <li><a href="/math">Math Question</a></li>
+          <li><a href="/bulk">Bulk Benchmark Upload</a></li>
         </ul>
       </div>
     </body>
@@ -191,7 +216,7 @@ app.get('/legal', (req, res) => {
   <body>
     <div class="container">
       <nav class="mt-3">
-        <a href="/">Home</a> | <a href="/legal">Legal</a> | <a href="/math">Math</a>
+        <a href="/">Home</a> | <a href="/legal">Legal</a> | <a href="/math">Math</a> | <a href="/bulk">Bulk Upload</a>
       </nav>
       <h1 class="mt-4">Legal Use Case</h1>
       <div class="row">
@@ -284,7 +309,7 @@ app.get('/math', (req, res) => {
   <body>
     <div class="container">
       <nav class="mt-3">
-        <a href="/">Home</a> | <a href="/legal">Legal</a> | <a href="/math">Math</a>
+        <a href="/">Home</a> | <a href="/legal">Legal</a> | <a href="/math">Math</a> | <a href="/bulk">Bulk Upload</a>
       </nav>
       <h1 class="mt-4">Math Question</h1>
       <div class="row">
@@ -359,6 +384,91 @@ app.get('/math', (req, res) => {
   `);
 });
 
+// ------ Bulk Page ------
+app.get('/bulk', (_, res) => res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bulk Debate Dataset</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+  <div class="container">
+    <nav class="mt-3">
+      <a href="/">Home</a> | <a href="/legal">Legal</a> | <a href="/math">Math</a> | <a href="/bulk">Bulk</a>
+    </nav>
+    <h1 class="mt-4">Bulk Debate Dataset</h1>
+    <p>Upload a <code>.parquet</code> or <code>.csv</code> file that contains a column named <code>question</code>.  
+       The server will run one debate per question and return a CSV with the answers.</p>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <input type="file" class="form-control-file" id="fileInput" name="file" accept=".parquet,.csv" required>
+      </div>
+    <div class="form-group">
+    <label for="sampleInput">Sample size (rows):</label>
+    <input type="number" id="sampleInput" class="form-control"
+           value="5000" min="1">
+  </div>
+  <div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" id="skipInference">
+    <label class="form-check-label" for="skipInference">
+      Don’t call the model (just give me the sampled rows)
+    </label>
+  </div>
+      <button type="submit" class="btn btn-primary">Run Debate</button>
+    </form>
+
+    <div id="status" class="mt-3"></div>
+  </div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const status = document.getElementById('status');
+  const file   = document.getElementById('fileInput').files[0];
+  const sample = document.getElementById('sampleInput').value;
+  const skip   = document.getElementById('skipInference').checked ? '1' : '0';
+
+  if (!file) {
+    status.textContent = 'Choose a file first';
+    return;
+  }
+
+  status.textContent = 'Uploading & processing – please wait…';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('sample', sample);   // e.g. "5000"
+  fd.append('skip',   skip);     // "1" or "0"
+
+  try {
+    const r = await fetch('/api/bulk/debate', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error('Server ' + r.status);
+
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = r.headers.get('content-disposition')?.includes('sampled')
+      ? 'sampled_questions.csv'
+      : 'debate_results.csv';
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+
+    status.innerHTML = '<span class="text-success">Finished – download started.</span>';
+  } catch (err) {
+    status.innerHTML = '<span class="text-danger">Error: ' + err.message + '</span>';
+  }
+});
+</script>
+</body>
+</html>
+`));
+
 // ========== API Endpoints ==========
 
 // ---- Legal Endpoints ----
@@ -405,7 +515,116 @@ app.post('/api/math/debate', async (req, res) => {
   }
 });
 
-// ========== Start Server ==========
+/* ------------------------------------------------------------------
+   UPLOAD CONFIGURATION
+------------------------------------------------------------------ */
+const crypto = require('crypto');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads');
+    fs.mkdirSync(dir, { recursive: true });          // ensure folder exists
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const origExt = path.extname(file.originalname).toLowerCase(); // ".parquet" or ".csv"
+    const ext     = origExt || '';                                  // keep whatever it was
+    cb(null, `${crypto.randomUUID()}${ext}`);
+  }
+});
+
+const upload = multer({ storage });
+
+/* ------------------------------------------------------------------
+   BULK DATASET ENDPOINT  –  accepts .parquet or .csv
+------------------------------------------------------------------ */
+app.post('/api/bulk/debate', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).send('No file uploaded');
+
+  const SAMPLE_N   = parseInt(req.body.sample || '5000', 10);
+  const SKIP_MODEL = req.body.skip === '1';
+  const questions  = [];
+
+  const fullPath   = path.resolve(req.file.path);        // absolute
+  const escaped    = fullPath.replace(/\\/g, '\\\\')     // Windows safety (harmless on Linux)
+                              .replace(/'/g,  "''");     // quote escaping
+
+  /* ---------- 1.  Try Parquet first if extension is .parquet ---------- */
+  let parquetOK = false;
+  if (path.extname(fullPath).toLowerCase() === '.parquet') {
+    try {
+      const db  = new duckdb.Database(':memory:');
+      const con = db.connect();
+
+      await con.each(
+        `SELECT question
+           FROM read_parquet('${escaped}')
+          WHERE question IS NOT NULL
+          ORDER BY random()
+          LIMIT ${SAMPLE_N}`,
+        [],
+        (err, row) => { if (err) throw err; questions.push(row.question); }
+      );
+
+      await con.close(); db.close();
+      parquetOK = true;
+    } catch (e) {
+      console.error('Parquet read failed, will try CSV fallback:', e.message);
+    }
+  }
+
+  /* ---------- 2.  CSV fallback ---------- */
+  if (!parquetOK) {
+    try {
+      await new Promise((ok, bad) => {
+        fs.createReadStream(fullPath)
+          .pipe(csvParser())
+          .on('data', r => { if (r.question) questions.push(r.question); })
+          .on('end', ok)
+          .on('error', bad);
+      });
+    } catch (csvErr) {
+      console.error('CSV fallback failed', csvErr);
+      fs.unlink(fullPath, () => {});
+      return res.status(400)
+        .send('File must be a valid Parquet or CSV with a "question" column');
+    }
+  }
+
+  if (!questions.length) {
+    fs.unlink(fullPath, () => {});
+    return res.status(400).send('No "question" column found.');
+  }
+
+  /* ---------- 3.  If skip=1, return sampled CSV only ---------- */
+  if (SKIP_MODEL) {
+    const csv = new Parser({ fields: ['question'] })
+      .parse(questions.map(q => ({ question: q })));
+    res.set('Content-Type',        'text/csv')
+       .set('Content-Disposition', 'attachment; filename="sampled_questions.csv"')
+       .send(csv);
+    fs.unlink(fullPath, () => {});
+    return;
+  }
+
+  /* ---------- 4.  Otherwise run debates ---------- */
+  const results = [];
+  for (const q of questions) {
+    const { finalAnswer } = await multiagentDebate(q, 1); // 1-round debate
+    results.push({ question: q, debate_answer: finalAnswer });
+  }
+
+  /* ---------- 5.  Return CSV with answers ---------- */
+  const csv = new Parser({ fields: ['question', 'debate_answer'] }).parse(results);
+  res.set('Content-Type',        'text/csv')
+     .set('Content-Disposition', 'attachment; filename="debate_results.csv"')
+     .send(csv);
+
+  fs.unlink(fullPath, () => {});                // clean temp file
+});
+/* ========== Start Server ========== */
+
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
